@@ -1,4 +1,4 @@
-function match(string) {
+function match(string) { // 'abcde'
     let state = start
     for(let c of string) {
         console.log(c)
@@ -58,6 +58,3 @@ function foundE(c) {
         return start(c)
     }
 }
-
-// test
-// match("abbc")
