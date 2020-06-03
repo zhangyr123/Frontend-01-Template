@@ -1,5 +1,5 @@
 const css = require('css')
-const layout = require("./layout.js")
+const layout = require('./layout.js')
 
 let currentToken = null
 let currentAttribute = null
@@ -7,33 +7,47 @@ let currentAttribute = null
 let stack = [{type: "document", children: []}]
 let currentTextNode = null
 
-// css
-// 收集css规则
+// css part1:收集CSS规则
 let rules = []
 function addCSSRules(text) {
     var ast = css.parse(text)
+    // console.log('ast: ', JSON.stringify(ast.stylesheet.rules))
     rules.push(...ast.stylesheet.rules)
 }
-
-
+// css part:元素与规则匹配
+// problem：此处为啥匹配
 function match(element, selector) {
     if(!selector || !element.attributes) {
         return false
     }
 
     if(selector.charAt(0) == "#") {
-        var attr = element.attributes.filter(attr => attr.name == "id")[0]
-        if(attr && attr.value === selector.replace("#", "")) {return true}
+        var attr = element.attributes.filter(attr => attr.name === 'id')[0]
+        // console.log('0: ', attr)
+        if(attr && attr.value === selector.replace("#", '')) {
+            return true
+        }
     } else if(selector.charAt(0) == ".") {
-        var attr = element.attributes.filter(attr => attr.name === "class")[0]
-        if(attr && attr.value === selector.replace(".", "")) {return true}
+        var attr = element.attributes.filter(attr => attr.name === 'class')[0]
+        if(attr && attr.value === selector.replace(".", '')) {
+            return true
+        }
     } else {
         if(element.tagName === selector) {
             return true
         }
     }
 }
-
+// css part3:计算选择器的权值
+/**
+ * 
+ * 权值说明：
+ * 1.内联样式表权值1000
+ * 2.id选择器为100
+ * 3.class选择器为10
+ * 4.标签选择器为1
+ * 此处存放的位置也是按照这个顺序来的
+ */
 function specificity(selector) {
     var p = [0, 0, 0, 0]
     var selectorParts = selector.split(" ")
@@ -48,7 +62,6 @@ function specificity(selector) {
     }
     return p
 }
-
 function compare(sp1, sp2) {
     if(sp1[0] - sp2[0]) {
         return sp1[0] - sp2[0]
@@ -59,12 +72,14 @@ function compare(sp1, sp2) {
     if(sp1[2] - sp2[2]) {
         return sp1[2] - sp2[2]
     }
-
     return sp1[3] - sp2[3]
 }
-
+// css part2:将收集的规则应用到元素上
 function computeCSS(element) {
-    var element = stack.slice().reverse()
+    // console.log('element: ', JSON.stringify(element))
+    var elements = stack.slice().reverse() //slice()是为了不污染stack，reverse()是倒序，因为调用时应先获取当前元素，所以时由内向外的顺序，而获取的数组顺序是由外向内
+    // console.log('elements: ',elements)
+
     if(!element.computedStyle) {
         element.computedStyle = {}
     }
@@ -72,22 +87,37 @@ function computeCSS(element) {
     for(let rule of rules) {
         var selectorParts = rule.selectors[0].split(" ").reverse()
 
-        if(!match(element, selectorParts[0])) continue
+        // 规则在获取元素之前完成，此处依据获取到的当前的元素，再依次遍历规则，判断该条规则选择器的最后一级与元素是否匹配；若不匹配，则当前步骤退出，继续下一次遍历；若匹配，则继续
+        if(!match(element, selectorParts[0])) {
+            continue
+        }
 
+        // console.log('ok')
         var j = 1
-        for(var i = 0; i < customElements.length; i++) {
-            if(match(elements[i], selectorParts[i])) {
+        for(var i = 0; i < elements.length; i++) {
+            // console.log("elements[i]: ", elements[i])
+            // console.log("selectorParts[j]: ", selectorParts[j])
+            if(match(elements[i], selectorParts[j])) {
                 j++
             }
         }
+        // console.log(j)
+        let matched
         if(j >= selectorParts.length) {
             matched = true
         }
 
+        // 元素的父子包含关系与选择器顺序匹配，继续，给元素添加computedStyle属性，值如下所示：
+        // { width: { value: '100px', specificity: [ 0, 1, 0, 2 ] },
+        //   background: { value: '#ff5000', specificity: [ 0, 1, 0, 2 ] } }
         if(matched) {
+            // console.log('matched!')
             var sp = specificity(rule.selectors[0])
+            // console.log('sp: ', sp)
             var computedStyle = element.computedStyle
+            // console.log('computedStyle: ', computedStyle)
             for(var declaration of rule.declarations) {
+                // console.log('declaration.property: ', declaration.property)
                 if(!computedStyle[declaration.property]) {
                     computedStyle[declaration.property] = {}
                 }
@@ -102,17 +132,18 @@ function computeCSS(element) {
                 }
             }
         }
+        // console.log('after element: ', JSON.stringify(element))
     }
 }
 
-
 function emit(token) {
     // if(token.type != "text")
-        // console.log('token: ', token)
+    //     console.log('token: ', token.tagName, token.type)
     
     let top = stack[stack.length - 1]
     
     if(token.type == "startTag") {
+        // console.log('tagName: ', token.tagName, 'startTag!!!')
         let element = {
             type: "element",
             children: [],
@@ -130,28 +161,38 @@ function emit(token) {
             }
         }
 
-        // 渲染
+        // console.log('computeCSS: ')
+        // 匹配元素和规则,给元素添加computedStyle属性
         computeCSS(element)
+        // console.log('----------------------------------------------------------------------------')
+        // console.log('yayaya: ', JSON.stringify(element))
 
         top.children.push(element)
         element.parent = top
 
         if(!token.isSelfClosing) {
             stack.push(element)
+        } else {
+            layout(element)
+            // console.log('top: ', element)
         }
         currentTextNode = null
+        // console.log('startTag: ', stack[stack.length - 1])
     } else if(token.type == "endTag") {
+        // console.log(top.tagName, token.tagName)
+        // console.log('tagName: ', token.tagName, 'endTag')
         if(top.tagName != token.tagName) {
             throw new Error("Tag start end doesn't match!")
         } else {
             if(top.tagName === "style") {
-                // 添加css规则
+                // console.log('tagName style!!!')
                 addCSSRules(top.children[0].content)
+                // console.log('rules: ', JSON.stringify(rules))
             }
+            // console.log('top: ', top)
+            layout(top)
             stack.pop()
         }
-        // 
-        layout(top)
         currentTextNode = null
     } else if(token.type == "text") {
         if(currentTextNode == null) {
@@ -163,6 +204,7 @@ function emit(token) {
         }
         currentTextNode.content += token.content
     }
+    // console.log('-----------------------------------------')
 }
 
 const EOF = Symbol("EOF")
@@ -200,23 +242,6 @@ function tagOpen(c) { // 开始标签
             content: c
         })
         return 
-    }
-}
-
-function endTagOpen(c) {
-    // console.log('endTagOpen: ', c)
-    if(c.match(/^[a-zA-Z]$/)) {
-        currentToken = {
-            type: "endTag",
-            tagName: ""
-        }
-        return tagName(c)
-    } else if(c == ">") {
-        //
-    } else if(c == EOF) {
-        //
-    } else {
-        //
     }
 }
 
@@ -375,6 +400,7 @@ function selfClosingStartTag(c) { // 自封闭标签
 function endTagOpen(c) {
     // console.log('endTagOpen: ', c)
     if(c.match(/^[a-zA-Z]$/)) {
+        // console.log('endTagOpen tagName!!!')
         currentToken = {
             type: "endTag",
             tagName: ""
@@ -384,8 +410,10 @@ function endTagOpen(c) {
         //
     } else if(c == EOF) {
         //
+    } else if(c == " ") {
+        return endTagOpen
     } else {
-        //
+        console.log('test')
     }
 }
 
@@ -414,10 +442,11 @@ function afterAttributeName(c) {
 }
 
 module.exports.parseHTML = function parseHTML(html) {
-    // console.log('html', html)
+    console.log('html', html)
     let state = data
     for(let c of html) {
         state = state(c)
+        // console.log('state: ', c)
     }
     state = state(EOF)
     // console.log('stack', stack[0])

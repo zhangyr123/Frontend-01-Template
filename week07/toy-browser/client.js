@@ -1,4 +1,6 @@
 const parser = require("./parser.js")
+const render = require('./render.js')
+const images = require('images')
 
 class Response {
     //
@@ -225,7 +227,14 @@ void async function() {
     })
     
     let response = await request.send()
-    //console.log('response', response)
+    // console.log('response', response.body)
     let dom = parser.parseHTML(response.body)
-    console.log('dom: ', dom)
+    // console.log('dom', dom)
+    let viewport = images(800, 600)
+    let dom1 = dom.children[0].children[1].children[0]
+    // console.log(dom1)
+
+    render(viewport, dom1)
+
+    viewport.save("viewport.jpg")
 }()

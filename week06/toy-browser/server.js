@@ -7,27 +7,62 @@ const server = http.createServer((req, res) => {
     res.setHeader('Centent-Type', 'text/html')
     res.setHeader('X-Foo', 'bar')
     res.writeHead(200, { 'Content-Type': 'text/plain', 'charset': 'utf-8' })
-    res.end(`<html maaa=a >
-    <head>
-        <style>
-    body div #myid{
-        width:100px;
-        background-color: #ff5000;
-    }
-    body div img{
-        width:30px;
-        background-color: #ff1111;
-    }
-        </style>
-    </head>
-    <body>
-        <div>
-            <img id="myid"/>
-            <img />
-        </div>
-    </body>
-    </html>
-    `)
+    
+    res.write('<html maaa=a >');
+    res.write('<head>');
+    res.write('<style>');
+    res.write('body div{')
+    res.write('display:flex;')
+    res.write('}');
+    res.write('body div #');
+    res.write('item1{')
+    res.write('width:20px;');
+    res.write('background-color');
+    res.write(':')
+    res.write(' #ff1111;')
+    res.write('}');
+    res.write('body div #');
+    res.write('item2{')
+    res.write('width:30px;');
+    res.write('background-color');
+    res.write(':')
+    res.write(' #0ec5f3;')
+    res.write('}');
+    res.write('body div #');
+    res.write('item3{')
+    res.write('width:40px;');
+    res.write('background-color');
+    res.write(':')
+    res.write(' #c42c89;')
+    res.write('}');
+    res.write('body div #');
+    res.write('item4{')
+    res.write('width:50px;');
+    res.write('background-color');
+    res.write(':')
+    res.write(' #9eb922;')
+    res.write('}');
+    res.write('</style>');
+    res.write('</head>');
+    res.write('<body>');
+    res.write('<div ');
+    res.write(' id="container"')
+    res.write(' >')
+    res.write('<span ');
+    res.write(' id="item1"')
+    res.write(' >')
+    res.write('item1')
+    res.write('</ span>');
+    res.write('<span ');
+    res.write(' id="item2"')
+    res.write(' >')
+    res.write('item2')
+    res.write('</ span>');
+    res.write('</div>');
+    res.write('</body>');
+    res.write('</html>');
+    res.end();
+
 })
 
 server.listen(8088)
