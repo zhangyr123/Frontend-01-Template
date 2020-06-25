@@ -19,6 +19,39 @@
 <div id="container"></div>
 <button onclick="localStorage.map = JSON.stringify(map)">save</button>
 <script>
+    class Sorted {
+        constructor(data, compare) {
+            this.data = data
+            this.compare = compare
+        } 
+        take() {
+            if(!this.data.length)
+                return ;
+            let min = this.data[0]
+            let minIndex = 0
+            // console.log(this.data)
+            for(let i = 1; i < this.data.length; i++) {
+                if(this.compare(this.data[i], min) < 0) {
+                    min = this.data[i]
+                    minIndex = i
+                }
+                // console.log(`${i}: `, min, minIndex)
+            }
+            this.data[minIndex] = this.data[this.data.length - 1]
+            // console.log(this.data)
+            this.data.pop()
+            // console.log(this.data)
+            // console.log('--------------------')
+            return min
+        }
+        insert(v) {
+            this.data.push(v)
+        }
+        get length() {
+            return this.data.length
+        }
+    }
+
     var map = localStorage.map ? JSON.parse(localStorage.map) : new Array(1000).fill(0);
     let container = document.getElementById("container")
     for(let y = 0; y < 100; y++) {
@@ -71,11 +104,19 @@
     // 寻路：重复的思想，这里用搜索
     // 深度优先搜索、广度优先搜索
     // 起始和终止是否一致
+
+    // 启发函数：启发函数算出来的值小于算出来的值，找到最优路径，启发函数-》a搜索
     async function findPath(map, start, end) {
         map = map.slice(); // 防止map被污染
+
+        function distance([x,y]) {
+            return (x - end[0]) ** 2 + (y - end[1]) ** 2
+        }
+
         // 点的状态：没有触发、已经走到了、再上一个状态扩展
         // 初始化队列
-        let queue = [start];
+        // let queue = [start];
+        let collection = new Sorted([start], (a, b) => distance(a) - distance(b))
         
         // 此处判断剔除格子
         async function insert([x, y], pre) {
@@ -91,12 +132,14 @@
             await sleep(5)
             // console.log(y * 100 + x)
             // console.log(x, y)
-            queue.push([x, y])
+            // queue.push([x, y])
+            collection.insert([x, y])
         }
         
-        while(queue.length) {
+        while(collection.length) {
             // 拿出状态2的格子
-            let [x, y] = queue.shift() // pop unshift ; push shift
+            // let [x, y] = queue.shift() // pop unshift ; push shift
+            let [x, y] = collection.take()
             // 找到终点时return
             if(x === end[0] && y === end[1]) {
                 let path = new Array()
