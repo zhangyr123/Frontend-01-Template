@@ -1,0 +1,211 @@
+<style>
+    div {
+        background-color: grey;
+        display: inline-block;
+        margin: 30px;
+        width: 100px;
+        height: 100px;
+        border-radius: 50px;;
+    }
+    .green.light {
+        background-color: green;
+    }
+    .yellow.light {
+        background-color: yellow;
+    }
+    .red.light {
+    background-color: red;
+    }
+</style>
+
+<div class="green"></div>
+<div class="yellow"></div>
+<div class="red"></div>
+
+<!-- <button id="next">next</button> -->
+
+<script>
+    // generate
+    function green() {
+        var lights = document.getElementsByTagName('div');
+        for(let i = 0; i < 3; i++) { lights[i].classList.remove('light'); }
+        document.getElementsByClassName("green")[0].classList.add("light"); 
+    } 
+    function red() { 
+        var lights=document.getElementsByTagName('div'); 
+        for(let i=0; i < 3; i++) { lights[i].classList.remove('light') }
+        document.getElementsByClassName("red")[0].classList.add("light") 
+    } 
+    function yellow() { 
+        var lights=document.getElementsByTagName('div') 
+        for(let i=0; i < 3; i++) { lights[i].classList.remove('light') }
+        document.getElementsByClassName("yellow")[0].classList.add("light") 
+    }
+
+    function sleep(t) {
+        return new Promise((resolve, reject)=> {
+            setTimeout(resolve, t)
+        })
+    }
+
+    function* go() {
+        // 可返回多个值
+        while(true) {
+            green()
+            yield sleep(1000);
+            yellow()
+            yield sleep(200);
+            red()
+            yield sleep(500);
+        }
+    }
+
+    function co(iterator) {
+        let {value,done} = iterator.next()
+        if(done)
+            return ;
+        if(value instanceof Promise)
+        value.then(() => {
+            co(iterator)
+        })
+    }
+    co(go())
+</script>
+
+<!-- <script>
+    // async await 异步函数
+    function green() {
+        var lights = document.getElementsByTagName('div');
+        for(let i = 0; i < 3; i++) { lights[i].classList.remove('light'); }
+        document.getElementsByClassName("green")[0].classList.add("light"); 
+    } 
+    function red() { 
+        var lights=document.getElementsByTagName('div'); 
+        for(let i=0; i < 3; i++) { lights[i].classList.remove('light') }
+        document.getElementsByClassName("red")[0].classList.add("light") 
+    } 
+    function yellow() { 
+        var lights=document.getElementsByTagName('div') 
+        for(let i=0; i < 3; i++) { lights[i].classList.remove('light') }
+        document.getElementsByClassName("yellow")[0].classList.add("light") 
+    } 
+
+    function sleep(t) { 
+        return new Promise((resolve, reject)=> {
+            setTimeout(resolve, t)
+        })
+    }
+
+    function happen(element, eventName) {
+        return new Promise((resolve, reject) => {
+            element.addEventListener(eventName, resolve, {once: true})
+        })
+    }
+
+    async function go() {
+        green();
+        await sleep(10000)
+        yellow();
+        await sleep(2000)
+        red()
+        await sleep(5000)
+        go()
+    }
+    // go()
+
+    async function next() {
+        green();
+        await happen(document.getElementById('next'), 'click')
+        yellow();
+        await happen(document.getElementById('next'), 'click')
+        red()
+        await happen(document.getElementById('next'), 'click')
+        next()
+    }
+    next()
+</script> -->
+
+<!-- <script>
+    // promise 链式表达
+    function green() {
+        var lights = document.getElementsByTagName('div');
+        for(let i = 0; i < 3; i++) { 
+            lights[i].classList.remove('light'); 
+        }
+        document.getElementsByClassName("green")[0].classList.add("light"); 
+    }
+    function red() { 
+        var lights=document.getElementsByTagName('div'); 
+        for(let i=0; i < 3; i++) { 
+            lights[i].classList.remove('light') 
+        }
+        document.getElementsByClassName("red")[0].classList.add("light") 
+    } 
+    function yellow() { 
+        var lights=document.getElementsByTagName('div') 
+        for(let i=0; i < 3; i++) { 
+            lights[i].classList.remove('light') 
+        }
+        document.getElementsByClassName("yellow")[0].classList.add("light") 
+    }
+
+    function sleep(t) {
+        return new Promise((resolve, reject) => {
+            setTimeout(resolve, t)
+        })
+    }
+
+    function go() {
+        green()
+        sleep(1000).then(() => {
+            yellow();
+            return sleep(200)
+        }).then(() => {
+            red();
+            return sleep(500)
+        }).then(go)
+    }
+    go()
+</script> -->
+
+<!-- <script>
+    // 最初的解法setTimeout
+    function green() {
+        var lights = document.getElementsByTagName('div')
+        for(let i = 0; i < 3; i++) {
+            lights[i].classList.remove('light')
+        }
+        document.getElementsByClassName("green")[0].classList.add("light")
+    }
+    function red() {
+        var lights = document.getElementsByTagName('div')
+        for(let i = 0; i < 3; i++) { 
+            lights[i].classList.remove('light') 
+        }
+        document.getElementsByClassName("red")[0].classList.add("light")
+    }
+    function yellow() {
+        var lights = document.getElementsByTagName('div')
+        for(let i = 0; i < 3; i++) { 
+            lights[i].classList.remove('light') 
+        }
+        document.getElementsByClassName("yellow")[0].classList.add("light") 
+    }
+    function go() {
+        green()
+        setTimeout(function(){
+            yellow()
+            setTimeout(function(){
+                red()
+                setTimeout(function() {
+                    go()
+                }, 17000)
+            }, 12000)
+        }, 10000)
+
+        // setTimeout(yellow, 10000)
+        // setTimeout(red, 12000)
+        // setTimeout(go, 17000)
+    }
+    go()
+</script> -->

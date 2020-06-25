@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<style>
+    .cell {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background-color: grey;
+        border-bottom: 1px solid white;
+        border-right: 1px solid white;
+        vertical-align: middle;
+    }
+    #container {
+        display: flex;
+        flex-wrap: wrap;
+        width: 701px;
+        line-height: 7px;
+    }
+</style>
+<div id="container"></div>
+<button onclick="localStorage.map = JSON.stringify(map)">save</button>
+<script>
+    var map = localStorage.map ? JSON.parse(localStorage.map) : new Array(1000).fill(0);
+    let container = document.getElementById("container")
+    for(let y = 0; y < 100; y++) {
+        for(let x = 0; x < 100; x++) {
+            let cell = document.createElement("div")
+            cell.classList.add("cell")
+
+            if(map[y * 100 + x] === 1) {
+                cell.style.backgroundColor = 'black'
+            }
+
+            cell.addEventListener("mousemove", () => {
+                if(mouse) {
+                    // 此处可尝试removeClass来尝试
+                    if(clear) {
+                        cell.style.backgroundColor = 'grey'
+                        map[y * 100 + x] = 0
+                    } else {
+                        cell.style.backgroundColor = 'black'
+                        map[y * 100 + x] = 1
+                    }
+                }
+                   
+            })
+            container.appendChild(cell)
+        }
+    }
+
+    // 设一个标志位
+    let mouse = false
+    // 擦除
+    let clear = false
+
+    // 此处mousedown和mouseup绑定在全局dom，不能绑定在container上的原因是考虑到鼠标移动到container外面在松开，mouse状态不会改变，当鼠标再次移动到container内部时还是会渲染cell
+    document.addEventListener('mousedown', e => {
+        mouse = true
+        clear = (e.which === 3)
+    })
+    document.addEventListener('mouseup', () => mouse = false)
+
+    // 阻止右键触发
+    document.addEventListener('contextmenu', e => e.preventDefault())
+
+    function sleep(t) {
+        new Promise((resolve, reject) => {
+            setTimeout(resolve, t)
+        })
+    }
+
+    // 寻路：重复的思想，这里用搜索
+    // 深度优先搜索、广度优先搜索
+    // 起始和终止是否一致
+    async function findPath(map, start, end) {
+        map = map.slice(); // 防止map被污染
+        // 点的状态：没有触发、已经走到了、再上一个状态扩展
+        // 初始化队列
+        let queue = [start];
+        
+        // 此处判断剔除格子
+        async function insert([x, y], pre) {
+            // 剔除已经走到的格子
+            if(map[100 * y + x]) 
+                return ; 
+            // 剔除边界的格子
+            if(x < 0 || x >= 100 || y >= 100 || y < 0) 
+                return ;
+            // 标记之前走过的格子，不走回头路
+            map[100 * y + x] = pre
+            container.children[y * 100 + x].style.backgroundColor = 'lightgreen'
+            await sleep(5)
+            // console.log(y * 100 + x)
+            // console.log(x, y)
+            queue.push([x, y])
+        }
+        
+        while(queue.length) {
+            // 拿出状态2的格子
+            let [x, y] = queue.shift() // pop unshift ; push shift
+            // 找到终点时return
+            if(x === end[0] && y === end[1]) {
+                let path = new Array()
+                console.log(x, y)
+                while(x !== start[0] || y !== start[1]) {
+                    path.push([x, y])
+                    await sleep(30)
+                    container.children[y * 100 + x].style.backgroundColor = "pink"
+                    // [x, y] = map[y * 100 + x]
+                    let temp = map[y * 100 + x]
+                    x = temp[0]
+                    y = temp[1]
+                }
+                return path
+                // return true
+            }
+            // 找出状态3的格子并入队
+            await insert([x - 1, y], [x, y])
+            await insert([x + 1, y], [x, y])
+            await insert([x, y - 1], [x, y])
+            await insert([x, y + 1], [x, y])
+
+            // 找斜线
+            await insert([x - 1, y - 1], [x, y])
+            await insert([x + 1, y - 1], [x, y])
+            await insert([x - 1, y + 1], [x, y])
+            await insert([x + 1, y + 1], [x, y])
+        }
+        // return false
+        return null
+    }
+</script>
