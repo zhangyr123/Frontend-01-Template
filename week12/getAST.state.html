@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<style>
+    ul li {
+        list-style: none;
+    }
+    li {
+        width: 300px;
+        border-bottom: 1px solid #fff;
+    }
+    .z-value {
+        float: right;
+        color: red;
+    }
+</style>
+<div class="container">
+    <div id="source"><label>例子：</label></div>
+    <div id="ast-tree"></div>
+</div>
+<script>
+    var dictionary = ["Number", "WhiteSpace", "LineTerminator", "+", "-", "*", "/", "(", ")"]
+
+    function match(str, index) {
+        let state = start
+        let text = ''
+        let stateCode
+        for(let i = index; i < str.length; i++) { 
+            let _state=state(str[i], text) 
+            state=_state[0]
+            stateCode=_state[1] 
+            text=_state[2] 
+            if(state===end) break 
+        } 
+        let len = text.length
+        if(len === 0) return null
+        return {
+            "val": stateCode == 0 ? Number(text) : text,
+            "lastIndex": index + len,
+            "stateCode": stateCode
+        }
+    }
+
+    function start(c, text) { 
+        if (['0', '1' , '2' , '3' , '4' , '5' , '6' , '7' , '8' , '9' ].includes(c)) { 
+            return [foundNumber, 0, text + c] 
+        } 
+        if(c===" " ) { 
+            return [end, 1, text + c] 
+        } 
+        if(["\n", "\r" ].includes(c)) { 
+            return [end, 2, text + c] 
+        } 
+        if(c==="+" ) { 
+            return [end, 3, text + c] 
+        } 
+        if(c==="-" ) { 
+            return [end, 4, text + c] 
+        }
+        if(c==='*' ) { 
+            return [end, 5, text + c] 
+        } 
+        if(c==='/' ) { 
+            return [end, 6, text + c] 
+        }
+        return [end, Infinity, text + c] 
+    } 
+
+    function end() { 
+        return end 
+    } 
+    
+    function foundNumber(c, text) { 
+        if (['0', '1' , '2' , '3' , '4' , '5' , '6' , '7' , '8' , '9'].includes(c)) { 
+            return [foundNumber, 0, text + c] 
+        } else { 
+            return [end, 0, text] 
+        } 
+    }
+
+    function* tokenize(source) {
+        var result = null
+        var lastIndex = 0
+
+        do {
+            // 匹配
+            result = match(source, lastIndex)
+            lastIndex = result ? result.lastIndex : lastIndex
+
+            //判断
+            if(!result) break;
+
+            if(!!!dictionary[result.stateCode]) {
+                throw new Error("Unexpexted token\"" + result.val + "\"!")
+            }
+
+            // 生成token
+            let token = {
+                type: null,
+                value: null
+            }
+
+            token.type = (dictionary[result.stateCode])
+            token.value = (result.val)
+            // console.log('token: ', token)
+
+            yield token
+        } while(result)
+
+        yield { type: "EOF" }
+    }
+
+    function Expression(source) {
+        if(source[0].type === "AdditiveExpression" && source[1].type === "EOF") {
+            let node = {
+                type: "Expression",
+                children: [source.shift(), source.shift()]
+            }
+            source.unshift(node)
+            return node
+        }
+        AdditiveExpression(source)
+        return Expression(source)
+    }
+
+    function AdditiveExpression(source) {
+        if(source[0].type === "Number") {
+            MultiplicativeExpression(source)
+            return AdditiveExpression(source)
+        }
+        if(source[0].type === "MultiplicativeExpression") {
+            let node = {
+                type: "AdditiveExpression",
+                children: [source.shift()]
+            }
+            source.unshift(node)
+            return AdditiveExpression(source)
+        }
+        if(source[0].type === "AdditiveExpression" &&  
+            source.length > 1 && source[1].type === "+") {
+            let node = {
+                type: "AdditiveExpression",
+                children: [source.shift(), source.shift()]
+            }
+            MultiplicativeExpression(source)
+            node.children.push(source.shift())
+            source.unshift(node)
+            return AdditiveExpression(source)
+        }
+        if(source[0].type === "AdditiveExpression" &&
+            source.length > 1 && source[1].type === "-") {
+            let node = {
+                type: "AdditiveExpression",
+                children: [source.shift(), source.shift()]
+            }
+            MultiplicativeExpression(source)
+            node.children.push(source.shift())
+            source.unshift(node)
+            return AdditiveExpression(source)
+        }
+        if(source[0].type === "AdditiveExpression") {
+            return source[0]
+        }
+    }
+
+    function MultiplicativeExpression(source) {
+        // console.log(source)
+        if(source[0].type == "Number") {
+            let node = {
+                type: "MultiplicativeExpression",
+                children: source.shift()
+            }
+            source.unshift(node)
+            return MultiplicativeExpression(source)
+        }
+        if(source[0].type == "MultiplicativeExpression" && 
+           source.length > 1 && source[1].type === "*") {
+            let node = {
+                type: "MultiplicativeExpression",
+                children: [source.shift(), source.shift(), source.shift()]
+            }
+            source.unshift(node)
+            return MultiplicativeExpression(source)
+        }
+        if(source[0].type == "MultiplicativeExpression" &&
+           source.length > 1 && source[1].type === "/") {
+            let node = {
+                type: "MultiplicativeExpression",
+                children: [source.shift(), source.shift(), source.shift()]
+            }
+            source.unshift(node)
+            return MultiplicativeExpression(source)
+        }
+
+        if(source[0].type === "MultiplicativeExpression") {
+            return source[0]
+        } 
+        throw new Error()
+    }
+
+    let source = []
+    let test = "7 + 8 * 201 - 9"
+    // console.log(tokenize(test))
+
+    for(let token of tokenize(test)) {
+        // 过滤掉空格等字符
+        if(token.type != 'WhiteSpace' && token.type != "LineTerminator")
+        source.push(token)
+    }
+
+    console.log(source)
+    // console.log(Expression(source))
+    let data = Expression(source)
+    console.log(data)
+
+    // 显示source
+    let text = document.getElementById("source")
+    let node = document.createTextNode(test)
+    text.appendChild(node)
+
+
+    // 生成ast树
+    let tree = document.getElementById("ast-tree")
+
+    // 生成叶节点
+    function Tree(data) {
+        let ul = document.createElement('ul')
+        for(let i = 0; i < data.length; i++) {
+            ul.appendChild(Leaf(data[i]))
+            if(data[i].children) {
+                let li = document.createElement('li')
+                if(data[i].children.length) // 叶节点有多个叶节点
+                    li.appendChild(Tree(data[i].children))
+                else  // 叶节点有单个叶节点
+                    li.appendChild(Tree([data[i].children]))
+                ul.appendChild(li)
+            }
+        }
+        return ul
+    }
+    function Leaf(data) {
+        let li = document.createElement('li')
+        li.setAttribute('class', 'z-title')
+        li.innerHTML = `<span class="z-type">${data.type}</span>` + `<span class="z-value">${data.value || ''}</span>`
+        li.style.background = '#eee'
+        return li 
+    }
+    tree.appendChild(Tree([data]))
+</script>

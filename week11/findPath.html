@@ -19,6 +19,7 @@
 <div id="container"></div>
 <button onclick="localStorage.map = JSON.stringify(map)">save</button>
 <script>
+    // 启发式搜索
     class Sorted {
         constructor(data, compare) {
             this.data = data
@@ -46,6 +47,55 @@
         }
         insert(v) {
             this.data.push(v)
+        }
+        get length() {
+            return this.data.length
+        }
+    }
+
+    // 二叉堆搜索
+    class BinaryHeap {
+        constructor(data, compare) {
+            this.data = data
+            this.compare = compare
+        }
+        take() {
+            if(!this.data.length) return ; 
+            let min = this.data[0]
+            let i = 0;
+            while(i < this.data.length) {
+                if(i * 2 + 1 >= this.data.length) 
+                    break;
+                if(i * 2 + 2 >= this.data.length) {
+                    this.data[i] = this.data[i * 2 + 1];
+                    i = i * 2 + 1;
+                    break;
+                }                    
+
+                if(this.compare(this.data[i * 2 + 1], this.data[i * 2 + 2]) < 0) {
+                    this.data[i] = this.data[i * 2 + 1];
+                    i = i * 2 + 1;
+                } else {
+                    this.data[i] = this.data[i * 2 + 2];
+                    i = i * 2 + 2;
+                }
+            }
+            if (i < this.data.length - 1) 
+                this.insertAt(i, this.data.pop())
+            else 
+                this.data.pop()
+            return min;
+        }
+        insertAt(i, v) {
+            this.data[i] = v
+            while (i> 0 && this.compare(v , this.data[Math.floor((i - 1)/2)]) < 0)  {
+                this.data[i] = this.data[Math.floor((i - 1)/2)]
+                this.data[Math.floor((i-1)/2)] = v
+                i = Math.floor((i-1)/2)
+            }
+        }
+        insert(v) {
+            this.insertAt(this.data.length, v)
         }
         get length() {
             return this.data.length
@@ -96,7 +146,7 @@
     document.addEventListener('contextmenu', e => e.preventDefault())
 
     function sleep(t) {
-        new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             setTimeout(resolve, t)
         })
     }
@@ -116,7 +166,7 @@
         // 点的状态：没有触发、已经走到了、再上一个状态扩展
         // 初始化队列
         // let queue = [start];
-        let collection = new Sorted([start], (a, b) => distance(a) - distance(b))
+        let collection = new BinaryHeap([start], (a, b) => distance(a) - distance(b))
         
         // 此处判断剔除格子
         async function insert([x, y], pre) {
@@ -145,13 +195,13 @@
                 let path = new Array()
                 console.log(x, y)
                 while(x !== start[0] || y !== start[1]) {
-                    path.push([x, y])
-                    await sleep(30)
-                    container.children[y * 100 + x].style.backgroundColor = "pink"
-                    // [x, y] = map[y * 100 + x]
-                    let temp = map[y * 100 + x]
-                    x = temp[0]
-                    y = temp[1]
+                    path.push([x, y]);
+                    await sleep(30);
+                    container.children[y * 100 + x].style.backgroundColor = "pink";
+                    [x, y] = map[y * 100 + x]
+                    // let temp = map[y * 100 + x]
+                    // x = temp[0]
+                    // y = temp[1]
                 }
                 return path
                 // return true
