@@ -52,3 +52,7 @@ let p = new Proxy(target, handler)
 2. 数据深度监听<br>
 3. 数据新增或删除<br>
 4. 数组<br>
+
+### 其他没解决的问题
+1. vue3.0中reative，effect的具体使用场景
+2. set和deleteProperty只能监听到第一个层级

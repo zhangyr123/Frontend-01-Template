@@ -1,0 +1,108 @@
+<script>
+    // 依赖收集
+    let handlers = new Map()
+    let reactivities = new Map()
+    let uesdReactives = []
+
+    // 判断是否是对象
+    function isObject(object) {
+        return typeof object == 'object' && object != null
+    }
+
+    // 对数据的各种干扰
+    function get(obj, prop, receiver) {
+        console.log('get', obj, prop)
+        let result = Reflect.get(obj, prop, receiver)
+        uesdReactives.push([obj, prop])
+        // 方法一：
+        // if(isObject(result)) {
+        //     return reactive(result)
+        // }
+        return result
+    }
+    function set(obj, prop, val, receiver) {
+        // set时赋值
+        let oldVal = obj[prop]
+        console.log('set', obj, prop, val)
+        let success = Reflect.set(obj, prop, val, receiver)
+        if(success) {
+            // console.log(obj, prop, val)
+            obverserObject(obj, '修改或添加')
+            if(handlers.get(obj)) 
+                if(handlers.get(obj).get(prop))
+                    for(let handler of handlers.get(obj).get(prop))
+                        handler()        
+        } 
+
+        return success
+    }
+    function deleteProperty(obj, prop) {
+        console.log('delete')
+        let success = Reflect.deleteProperty(obj, prop)
+        if(success) {
+            if(Array.isArray(obj))
+                obj.length--
+            obverserObject(obj, '删除')
+            if(handlers.get(obj))
+                if(handlers.get(obj).get(prop))
+                    for(let handler of handlers.get(obj).get(prop))
+                        handler()
+        } 
+        return success
+    }
+    function reactive(obj) {
+        if(!isObject(obj)) 
+            return obj
+        if(reactivities.has(obj)) {
+            return reactivies.get(obj)
+        }
+        let proxy = new Proxy(obj, {set, get, deleteProperty})
+        reactivities.set(obj, proxy)
+        return proxy
+    }
+
+    // 依赖收集
+    function effect(handler) {
+        uesdReactives = []
+        // 执行方法
+        handler()
+        // 根据依赖关系，防止重复加入handler
+        for(let uesdReactivity of uesdReactives) {
+            let [obj, prop] = uesdReactivity
+            if(!handlers.has(obj)) {
+                handlers.set(obj, new Map())
+            }
+            if(!handlers.get(obj).has(prop)) {
+                handlers.get(obj).set(prop, [])
+            }
+            handlers.get(obj).get(prop).push(handler)
+        }
+    }
+
+    // 数据变化的类型
+    function obverserObject(newObj, style) {
+        console.log(`数据被${style}`, newObj)
+    }
+
+    // TEST1
+    let dummy;
+
+    let proxy = reactive({a:{x:1}})
+
+    effect(() => dummy = proxy.a.x)
+    // console.log('1: ', dummy)
+
+    proxy.a = {x:4}
+    // console.log('2: ', dummy)
+
+    // TEST2
+    // let dummy;
+    // let p = reactive([1,2,3])
+    // let handler = () => dummy = p[p.length - 1]
+    // effect(handler)
+    // p.push(4)
+    // console.log(dummy)
+    // delete p[4]
+    // console.log(dummy)
+
+</script>
