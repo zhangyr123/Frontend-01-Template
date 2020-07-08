@@ -1,3 +1,4 @@
+<!--使用range精确操作dom树-->
 <div id="container">文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字
 文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字
 文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字 文字文字 文字
@@ -31,6 +32,8 @@
     let ranges = []
 
     let container = document.getElementById("container")
+    // 存储文字距离的矩阵
+    console.log(container.childNodes[0].textContent.length)
     for(let i = 0; i < container.childNodes[0].textContent.length; i++) {
         let range = document.createRange()
         range.setStart(container.childNodes[0], i)
@@ -43,8 +46,8 @@
         let distance = Infinity
         for(let range of ranges) {
             let {x, y} = range.getBoundingClientRect()
-            let d = (x0 - x) ** 2
- + (y0 - y) ** 2
+            console.log(x,y)
+            let d = (x0 - x) ** 2 + (y0 - y) ** 2
             if(d  < distance) {
                 nearestRange = range
                 distance = d

@@ -1,8 +1,4 @@
-const { start } = require("repl")
-const { nextTick } = require("process")
-const { PreviousMap } = require("postcss")
-const { genericTypeAnnotation } = require("babel-types")
-
+// 轮播图的设计逻辑
 Carousel
    state
        activeIndex

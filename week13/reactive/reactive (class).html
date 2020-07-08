@@ -2,6 +2,8 @@
 <input id="g" type="range" min="0" max="255"/>
 <input id="b" type="range" min="0" max="255"/>
 <div id="container" style="border: 1px solid black;width:150px;height:150px;"></div>
+
+<div id="text">Hello {{name}}!</div>
 <script>
     let handlers = new Map()
 
@@ -69,15 +71,15 @@
 
     // TEST1：
 
-    let dummy;
+    // let dummy;
 
-    let proxy = reactive({a:{x:2}})
-    // console.log('proxy: ', proxy)
+    // let proxy = reactive({a:{x:2}})
+    // // console.log('proxy: ', proxy)
 
-    effect(() => dummy = proxy.a.x)
-    // console.log('1: ', dummy)
+    // effect(() => dummy = proxy.a.x)
+    // // console.log('1: ', dummy)
 
-    proxy.a = {x:4}
+    // proxy.a = {x:4}
     // console.log('2: ', dummy)
 
     // TEST2:
@@ -110,24 +112,36 @@
 
     // TEST4：
     // 数据双向绑定
-    // let p = reactive({r: 255, g: 255, b: 255})
-    // effect(() => {
-    //     // 单向
-    //     document.getElementById("r").value = p.r
-    //     document.getElementById("g").value = p.g
-    //     document.getElementById("b").value = p.b
-    //     // 绑定调色盘的值
-    //     document.getElementById("container").style.backgroundColor = `rgb(${p.r}, ${p.g}, ${p.b})`
-    // })
+    let p = reactive({r: 255, g: 255, b: 255})
+    effect(() => {
+        // 单向
+        document.getElementById("r").value = p.r
+        document.getElementById("g").value = p.g
+        document.getElementById("b").value = p.b
+        // 绑定调色盘的值
+        document.getElementById("container").style.backgroundColor = `rgb(${p.r}, ${p.g}, ${p.b})`
+    })
 
-    // document.getElementById("r").addEventListener("input", event => {
-    //     p.r = event.target.value
-    // })
-    // document.getElementById("g").addEventListener("input", event => {
-    //     p.g = event.target.value
-    // })
-    // document.getElementById("b").addEventListener("input", event => {
-    //     p.b = event.target.value
-    // })
+    document.getElementById("r").addEventListener("input", event => {
+        p.r = event.target.value
+    })
+    document.getElementById("g").addEventListener("input", event => {
+        p.g = event.target.value
+    })
+    document.getElementById("b").addEventListener("input", event => {
+        p.b = event.target.value
+    })
+
+    // range和双向绑定结合
+    let range = document.createRange()
+    range.setStart(document.getElementById('text').childNodes[0], 6)
+    range.setEnd(document.getElementById("text").childNodes[0], 14)
+
+    let data = reactive({text: "world"})
+    effect(() => {
+        console.log('range: ', range)
+        range.extractContents()
+        range.insertNode(document.createTextNode(data.text))
+    })
     
 </script>
