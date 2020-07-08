@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>observer-proxy</title>
+    </head>
+    <body>
+        <!-- 123 -->
+    </body>
+    <script>
+        // 添加观察者
+        const queuedObservers = new Set()
+        const observe = fn => queuedObservers.add(fn)
+
+        // proxy的set方法
+        function set(obj, key, value, receiver) {
+            const result = Reflect.set(obj, key, value, receiver)
+            queuedObservers.forEach(observer => observer())
+            return result
+        }
+        function get(obj, key, receiver) {
+            console.log('get', obj[key])
+            return obj[key]
+        } 
+
+        // 创建proxy代理
+        const observable = obj => new Proxy(obj, {set, get})
+        // 被观察的对象
+        let person = observable({
+            name: 'zhangyr',
+            age: 24
+        })
+
+        function print() {
+            console.log(`1号: ${person.name}, ${person.age}`)
+        }
+
+        function print2() {
+            console.log(`2号： ${person.name}, ${person.age}`)
+        }
+
+        // 添加观察者
+        observe(print)
+        observe(print2)
+    </script>
+</html>

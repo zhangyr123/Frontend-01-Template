@@ -1,0 +1,76 @@
+<script>
+    // 依赖收集
+    let handlers = new Map()
+    let reactivities = new Map()
+    let uesdReactives = []
+
+    // 对数据的各种干扰
+    function get(obj, prop) {
+        let result = Reflect.get(obj, prop)
+        uesdReactives.push([obj, prop])
+        if(typeof obj[prop] === 'object') {
+            return reactive(obj[prop])
+        }
+        return result
+    }
+    function set(obj, prop, val) {
+        // set时赋值
+        let success = Reflect.set(obj, prop, val)
+
+        if(success) {
+            obverserObject(obj, '修改或添加')
+            if(handlers.get(obj)) 
+                if(handlers.get(obj).get(prop))
+                    for(let handler of handlers.get(obj).get(prop))
+                        handler()
+        } 
+
+        return success
+    }
+    function deleteProperty(obj, key) {
+        let success = Reflect.deleteProperty(obj, key)
+        if(success)
+            obverserObject(obj, '删除')
+        return success
+    }
+    function reactive(obj) {
+        let proxy = new Proxy(obj, {set, get, deleteProperty})
+        return proxy
+    }
+
+    // 依赖收集
+    function effect(handler) {
+        uesdReactives = []
+        // 执行方法
+        handler()
+        // 根据依赖关系，防止重复加入handler
+        for(let uesdReactivity of uesdReactives) {
+            let [obj, prop] = uesdReactivity
+            if(!handlers.has(obj)) {
+                handlers.set(obj, new Map())
+            }
+            if(!handlers.get(obj).has(prop)) {
+                handlers.get(obj).set(prop, [])
+            }
+            handlers.get(obj).get(prop).push(handler)
+        }
+    }
+
+    // 数据变化的类型
+    function obverserObject(newObj, style) {
+        console.log(`数据被${style}`, newObj)
+    }
+
+    let dummy;
+
+    let proxy = reactive({a:{x:1}})
+    // console.log('proxy: ', proxy)
+
+    let handler = () => dummy = proxy.a.x
+    effect(handler)
+    console.log('1: ', dummy)
+
+    proxy.a = {x:4}
+    console.log('2: ', dummy)
+
+</script>
